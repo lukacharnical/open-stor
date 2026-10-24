@@ -1,2164 +1,312 @@
+from pathlib import Path
+import zipfile
 
-
-<!DOCTYPE html>
-
+html = r'''<!doctype html>
 <html lang="fr" class="dark">
-
 <head>
-
-  <meta charset="UTF-8">
-
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <meta name="theme-color" content="#020617">
-
-  <title>OpenStore - Plateforme Libre APK</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <script>
-
-    tailwind.config = {
-
-      darkMode: "class",
-
-      theme: { extend: { colors: { brand: {
-
-        50: "#eef2ff", 100: "#e0e7ff", 500: "#6366f1",
-
-        600: "#4f46e5", 700: "#4338ca", 900: "#312e81"
-
-      }}}}
-
-    };
-
-  </script>
-
-  <style>
-
-    .glass-panel {
-
-      background: rgba(15,23,42,.92);
-
-      backdrop-filter: blur(16px);
-
-      border: 1px solid rgba(255,255,255,.1);
-
-    }
-
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-
-      background: #4f46e5;
-
-      border-radius: 5px;
-
-    }
-
-    [hidden] { display: none !important; }
-
-  </style>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#020617">
+<title>OpenStore — Applications Android</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  [hidden]{display:none!important}
+  body{background:#020617;color:#e2e8f0}
+  .glass{background:rgba(15,23,42,.92);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.09)}
+  input,select,textarea{color-scheme:dark}
+</style>
 </head>
-
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
-
-
-
-  <div id="toastContainer" class="fixed bottom-5 right-5 z-[100] flex flex-col gap-2"></div>
-
-
-
-  <header class="sticky top-0 z-40 glass-panel px-4 lg:px-8 py-3">
-
-    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
-
-      <a href="./index.html" class="flex items-center gap-3 shrink-0">
-
-        <!-- Logo OpenStore depuis GitHub -->
-
-        <div class="w-10 h-10 flex items-center justify-center">
-
-          <img
-
-            src="https://raw.githubusercontent.com/lukacharnical/openstore/main/logo.png"
-
-            alt="Logo OpenStore"
-
-            class="w-full h-full object-contain"
-
-            onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/lukacharnical/openstore/main/logo.png';"
-
-          >
-
-        </div>
-
-        <div>
-
-          <h1 class="font-bold text-lg leading-none">OpenStore</h1>
-
-          <p id="connectionStatus" class="text-xs text-slate-400 mt-1">Connexion à Firebase...</p>
-
-        </div>
-
-      </a>
-
-
-
-      <div class="flex items-center justify-end gap-2 flex-wrap">
-
-        <a id="adminLink" href="admin.html" hidden
-
-          class="px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 text-sm">
-
-          <i data-lucide="shield-check" class="w-4 h-4 inline"></i>
-
-          Administration
-
-        </a>
-        <a id="developerLink" href="developpeur.html" hidden class="px-3 py-2 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-sm">Espace développeur</a>
-        <a id="userSpaceLink" href="utilisateur.html" hidden class="px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-sm">Mon espace</a>
-
-
-
-        <button id="openSubmitModalBtn" hidden
-
-          class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm">
-
-          <i data-lucide="plus" class="w-4 h-4 inline"></i>
-
-          Ajouter une App
-
-        </button>
-
-
-
-        <div id="userAccountSection">
-
-          <button id="openLoginModalBtn"
-
-            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm">
-
-            <i data-lucide="log-in" class="w-4 h-4 inline"></i>
-
-            Connexion
-
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </header>
-
-
-
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
-
-    <section class="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 border border-slate-800">
-
-      <h2 class="font-semibold">Bienvenue sur OpenStore</h2>
-
-      <p class="text-sm text-slate-400 mt-1">
-
-        Télécharge des applications Android et consulte leur code source.
-
-        Connecte-toi pour proposer une application.
-
-      </p>
-
-      <p class="text-xs text-slate-500 mt-2">
-
-        Les versions GitHub sont récupérées automatiquement lorsque l'application possède un dépôt GitHub public valide.
-
-      </p>
-
-    </section>
-
-
-
-    <section class="flex flex-col md:flex-row gap-4 items-center justify-between">
-
-      <div class="relative w-full md:w-96">
-
-        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-
-        <input id="searchInput" type="search"
-
-          placeholder="Rechercher une application..."
-
-          class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 focus:outline-none focus:border-indigo-500">
-
-      </div>
-
-
-
-      <div class="flex flex-wrap gap-2">
-
-        <button data-category="all" class="category-btn px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm">Toutes</button>
-
-        <button data-category="Utilitaires" class="category-btn px-3 py-2 rounded-lg bg-slate-800 text-sm">Utilitaires</button>
-
-        <button data-category="Jeux" class="category-btn px-3 py-2 rounded-lg bg-slate-800 text-sm">Jeux</button>
-
-        <button data-category="Productivité" class="category-btn px-3 py-2 rounded-lg bg-slate-800 text-sm">Productivité</button>
-
-      </div>
-
-    </section>
-
-
-
-    <p id="loadingMessage" class="text-sm text-slate-400">Chargement des applications...</p>
-
-    <section id="appGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
-
-
-
-    <section id="emptyState" hidden class="py-16 text-center">
-
-      <i data-lucide="package-open" class="w-12 h-12 mx-auto text-slate-500"></i>
-
-      <h2 class="font-semibold mt-4">Aucune application trouvée</h2>
-
-      <p class="text-sm text-slate-400 mt-2">Essaie un autre mot-clé ou une autre catégorie.</p>
-
-    </section>
-
-
-
-    <section id="loadError" hidden class="p-4 rounded-xl border border-rose-500/30 bg-rose-950/30">
-
-      <p id="loadErrorText" class="text-sm text-rose-300"></p>
-
-      <button id="retryLoadBtn" class="mt-3 px-4 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-sm">Réessayer</button>
-
-    </section>
-
-  </main>
-
-
-
-  <footer class="border-t border-slate-800 p-5 text-center text-xs text-slate-500">
-
-    OpenStore — Plateforme libre d'applications Android
-
-  </footer>
-
-
-
-  <!-- Connexion -->
-
-  <div id="loginModal" hidden class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
-
-    <section class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6">
-
-      <div class="flex justify-between items-center mb-5">
-
-        <h2 class="text-xl font-bold">Espace membre</h2>
-
-        <button data-close="loginModal" class="p-2 hover:text-rose-400" aria-label="Fermer">
-
-          <i data-lucide="x"></i>
-
-        </button>
-
-      </div>
-
-
-
-      <form id="loginForm" class="space-y-4">
-
-        <div>
-
-          <label for="loginUsername" class="block text-sm mb-2">E-mail ou identifiant</label>
-
-          <input id="loginUsername" type="email" required autocomplete="username"
-
-            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-
-        </div>
-
-        <div>
-
-          <label for="loginPassword" class="block text-sm mb-2">Mot de passe</label>
-
-          <input id="loginPassword" type="password" required autocomplete="current-password"
-
-            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-
-        </div>
-
-        <p id="loginErrorText" hidden class="text-sm text-rose-400"></p>
-
-        <button id="loginSubmitBtn" type="submit"
-
-          class="w-full p-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium">
-
-          Se connecter
-
-        </button>
-
-      </form>
-
-    </section>
-
-  </div>
-
-
-
-  <!-- Ajouter une application -->
-
-  <div id="submitModal" hidden class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85">
-
-    <section class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-
-      <div class="flex justify-between items-center mb-5">
-
-        <h2 class="text-xl font-bold">Ajouter une application</h2>
-
-        <button data-close="submitModal" aria-label="Fermer"><i data-lucide="x"></i></button>
-
-      </div>
-
-
-
-      <form id="addAppForm" class="space-y-4">
-
-        <div>
-
-          <label for="appName" class="block text-sm mb-1">Nom *</label>
-
-          <input id="appName" required maxlength="100"
-
-            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-
-        </div>
-
-
-
-        <div>
-
-          <label for="appCategory" class="block text-sm mb-1">Catégorie *</label>
-
-          <select id="appCategory" required class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-
-            <option>Utilitaires</option>
-
-            <option>Jeux</option>
-
-            <option>Productivité</option>
-
-          </select>
-
-        </div>
-
-
-
-        <div>
-
-          <label for="appDownloadUrl" class="block text-sm mb-1">Lien APK direct (solution de secours) *</label>
-
-          <input id="appDownloadUrl" type="url" required placeholder="https://.../application.apk"
-
-            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-
-          <p class="text-xs text-slate-500 mt-1">Utilisé si le dépôt ne fournit aucun APK détectable.</p>
-
-        </div>
-
-
-
-        <div>
-
-          <label for="appRepoUrl" class="block text-sm mb-1">Dépôt GitHub (pour afficher les versions)</label>
-
-          <input id="appRepoUrl" type="url" placeholder="https://github.com/proprietaire/depot"
-
-            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-
-          <p class="text-xs text-slate-500 mt-1">Dépôt public recommandé. OpenStore cherchera les APK dans les Releases.</p>
-
-        </div>
-
-
-
-        <div>
-
-          <label for="appIconUrl" class="block text-sm mb-1">URL de l'icône</label>
-
-          <input id="appIconUrl" type="url" placeholder="https://..."
-
-            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-
-        </div>
-
-
-
-        <div>
-
-          <label for="appDescription" class="block text-sm mb-1">Description</label>
-
-          <textarea id="appDescription" rows="3" maxlength="2000"
-
-            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"></textarea>
-
-        </div>
-
-
-
-        <p id="addAppError" hidden class="text-sm text-rose-400"></p>
-
-
-
-        <div class="flex justify-end gap-3">
-
-          <button type="button" data-close="submitModal" class="px-4 py-2 rounded-lg bg-slate-800">Annuler</button>
-
-          <button id="publishBtn" type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500">Publier</button>
-
-        </div>
-
-      </form>
-
-    </section>
-
-  </div>
-
-
-
-  <!-- Administration -->
-
-  <div id="adminPanelModal" hidden class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85">
-
-    <section class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-
-      <div class="flex justify-between items-center mb-5">
-
-        <h2 class="text-xl font-bold text-amber-400">Administration</h2>
-
-        <button data-close="adminPanelModal" aria-label="Fermer"><i data-lucide="x"></i></button>
-
-      </div>
-
-
-
-      <form id="createUserForm" class="space-y-3 mb-6">
-
-        <h3 class="font-semibold">Ajouter un utilisateur dans la base</h3>
-
-        <input id="newUsername" type="email" required maxlength="120"
-
-          placeholder="E-mail (ex: ami@openstore.com)"
-
-          class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-
-
-
-        <div>
-
-          <label for="newUserRole" class="block text-xs text-slate-400 mb-1">Rôle de l'utilisateur :</label>
-
-          <select id="newUserRole" required class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-
-            <option value="ami"></option>
-
-            <option value="Invité">Invité</option>
-
-            <option value="testeur">Testeur</option>
-
-            <option value="codeur">Codeur</option>
-
-            <option value="programmeur">Programmeur</option>
-
-            <option value="admin">Administrateur</option>
-
-          </select>
-
-        </div>
-
-
-
-        <button type="submit" id="createUserSubmitBtn"
-
-          class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium">
-
-          Ajouter au répertoire
-
-        </button>
-
-        <p id="createUserError" hidden class="text-sm text-rose-400"></p>
-
-      </form>
-
-
-
-      <h3 class="font-semibold mb-3">Comptes enregistrés</h3>
-
-      <div id="usersListContainer" class="space-y-2"></div>
-
-    </section>
-
-  </div>
-
-
+<body class="min-h-screen flex flex-col font-sans">
+<div id="toastContainer" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2" aria-live="polite"></div>
+<header class="sticky top-0 z-40 glass px-4 lg:px-8 py-3">
+  <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+    <a href="./index.html" class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center"><i data-lucide="orbit" class="w-6 h-6"></i></div>
+      <div><h1 class="font-bold text-lg leading-none">OpenStore</h1><p id="connectionStatus" class="text-xs text-slate-400 mt-1">Connexion à Firebase…</p></div>
+    </a>
+    <nav class="flex flex-wrap items-center gap-2">
+      <a id="adminLink" href="admin.html" hidden class="px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-sm"><i data-lucide="shield-check" class="inline w-4 h-4"></i> Administration</a>
+      <a id="developerLink" href="developpeur.html" hidden class="px-3 py-2 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-sm">Espace développeur</a>
+      <a id="userSpaceLink" href="utilisateur.html" hidden class="px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-sm">Mon espace</a>
+      <button id="openSubmitModalBtn" hidden class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm"><i data-lucide="plus" class="inline w-4 h-4"></i> Proposer une app</button>
+      <div id="userAccountSection"><button id="openLoginModalBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm"><i data-lucide="log-in" class="inline w-4 h-4"></i> Connexion</button></div>
+    </nav>
+  </div>
+</header>
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
+  <section class="p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 border border-slate-800">
+    <h2 class="font-semibold text-xl">Bienvenue sur OpenStore</h2>
+    <p class="text-sm text-slate-300 mt-2">Découvre et télécharge des applications Android, et consulte leur code source.</p>
+    <p class="text-xs text-slate-400 mt-2">Les versions APK sont récupérées automatiquement depuis les Releases des dépôts GitHub publics.</p>
+  </section>
+  <section class="flex flex-col md:flex-row gap-4 items-center justify-between">
+    <div class="relative w-full md:w-96"><i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="searchInput" type="search" placeholder="Rechercher une application…" class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 focus:outline-none focus:border-indigo-500"></div>
+    <div class="flex flex-wrap gap-2">
+      <button data-category="all" class="category-btn px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm">Toutes</button>
+      <button data-category="Utilitaires" class="category-btn px-3 py-2 rounded-lg bg-slate-800 text-sm">Utilitaires</button>
+      <button data-category="Jeux" class="category-btn px-3 py-2 rounded-lg bg-slate-800 text-sm">Jeux</button>
+      <button data-category="Productivité" class="category-btn px-3 py-2 rounded-lg bg-slate-800 text-sm">Productivité</button>
+    </div>
+  </section>
+  <p id="loadingMessage" class="text-sm text-slate-400">Chargement des applications…</p>
+  <section id="appGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
+  <section id="emptyState" hidden class="py-16 text-center"><i data-lucide="package-open" class="w-12 h-12 mx-auto text-slate-500"></i><h2 class="font-semibold mt-4">Aucune application trouvée</h2><p class="text-sm text-slate-400 mt-2">Essaie un autre mot-clé ou une autre catégorie.</p></section>
+  <section id="loadError" hidden class="p-4 rounded-xl border border-rose-500/30 bg-rose-950/30"><p id="loadErrorText" class="text-sm text-rose-300"></p><button id="retryLoadBtn" class="mt-3 px-4 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-sm">Réessayer</button></section>
+</main>
+<footer class="border-t border-slate-800 p-5 text-center text-xs text-slate-500">OpenStore — Plateforme libre d'applications Android</footer>
+
+<!-- Fenêtre de connexion uniquement : la gestion des utilisateurs est sur admin.html -->
+<div id="loginModal" hidden class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+  <section class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6">
+    <div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold">Espace membre</h2><button data-close="loginModal" class="p-2 hover:text-rose-400" aria-label="Fermer"><i data-lucide="x"></i></button></div>
+    <form id="loginForm" class="space-y-4">
+      <div><label for="loginUsername" class="block text-sm mb-2">Adresse e-mail</label><input id="loginUsername" type="email" required autocomplete="username" class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"></div>
+      <div><label for="loginPassword" class="block text-sm mb-2">Mot de passe</label><input id="loginPassword" type="password" required autocomplete="current-password" class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"></div>
+      <p id="loginErrorText" hidden class="text-sm text-rose-400"></p>
+      <button id="loginSubmitBtn" type="submit" class="w-full p-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium">Se connecter</button>
+    </form>
+  </section>
+</div>
+
+<div id="submitModal" hidden class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85">
+  <section class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold">Proposer une application</h2><button data-close="submitModal" aria-label="Fermer"><i data-lucide="x"></i></button></div>
+    <form id="addAppForm" class="space-y-4">
+      <div><label for="appName" class="block text-sm mb-1">Nom *</label><input id="appName" required maxlength="100" class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"></div>
+      <div><label for="appCategory" class="block text-sm mb-1">Catégorie *</label><select id="appCategory" required class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"><option>Utilitaires</option><option>Jeux</option><option>Productivité</option></select></div>
+      <div><label for="appDownloadUrl" class="block text-sm mb-1">Lien APK direct *</label><input id="appDownloadUrl" type="url" required placeholder="https://…/application.apk" class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"><p class="text-xs text-slate-500 mt-1">Lien utilisé en secours si aucune version n'est détectée sur GitHub.</p></div>
+      <div><label for="appRepoUrl" class="block text-sm mb-1">Dépôt GitHub (facultatif)</label><input id="appRepoUrl" type="url" placeholder="https://github.com/proprietaire/depot" class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"></div>
+      <div><label for="appIconUrl" class="block text-sm mb-1">URL de l'icône (facultatif)</label><input id="appIconUrl" type="url" placeholder="https://…" class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"></div>
+      <div><label for="appDescription" class="block text-sm mb-1">Description</label><textarea id="appDescription" rows="3" maxlength="2000" class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"></textarea></div>
+      <p id="addAppError" hidden class="text-sm text-rose-400"></p>
+      <div class="flex justify-end gap-3"><button type="button" data-close="submitModal" class="px-4 py-2 rounded-lg bg-slate-800">Annuler</button><button id="publishBtn" type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500">Publier</button></div>
+    </form>
+  </section>
+</div>
 
 <script type="module">
-
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-
-  import {
-
-    getDatabase, ref, onValue, push, remove, get
-
-  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-  import {
-
-    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
-
-  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-
-
-  const firebaseConfig = {
-
-    apiKey: "AIzaSyDBd_NPKinJ6Vu4Wk_98rNaM75NBNMaGdo",
-
-    authDomain: "openstore-be393.firebaseapp.com",
-
-    databaseURL: "https://openstore-be393-default-rtdb.firebaseio.com",
-
-    projectId: "openstore-be393",
-
-    storageBucket: "openstore-be393.firebasestorage.app",
-
-    messagingSenderId: "615451083226",
-
-    appId: "1:615451083226:web:2ccfdad00c8474088180e3",
-
-    measurementId: "G-1CRYGEK1G0"
-
-  };
-
-
-
-  const firebaseApp = initializeApp(firebaseConfig);
-
-  const db = getDatabase(firebaseApp);
-
-  const auth = getAuth(firebaseApp);
-
-  const $ = id => document.getElementById(id);
-
-
-
-  const state = {
-
-    currentUser: null,
-
-    currentRole: "",
-
-    isAdmin: false,
-    canDevelop: false,
-
-    apps: [],
-
-    category: "all",
-
-    search: "",
-
-    appsLoaded: false,
-
-    appsError: null
-
-  };
-
-
-
-  let unsubscribeApps = null;
-
-  const versionsCache = new Map();
-
-
-
-  const emailKey = value =>
-
-    String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "_");
-
-
-
-  async function loadCurrentRole(user) {
-
-    state.currentRole = "";
-
-    state.isAdmin = false;
-
-    if (!user?.email) return;
-
-
-
-    try {
-
-      const snap = await get(ref(db, "store_users/" + emailKey(user.email)));
-
-      const record = snap.val() || {};
-
-      state.currentRole = String(record.role || "").toLowerCase();
-
-      state.isAdmin = ["admin", "administrateur"].includes(state.currentRole);
-      state.canDevelop = ["codeur", "programmeur", "admin", "administrateur"].includes(state.currentRole);
-
-    } catch (error) {
-
-      console.warn("Impossible de lire le rôle OpenStore", error);
-
-      state.isAdmin = false;
-
-    }
-
-  }
-
-
-
-  function showToast(message, type = "info") {
-
-    const toast = document.createElement("div");
-
-    const colors = {
-
-      success: "bg-emerald-700",
-
-      error: "bg-rose-700",
-
-      info: "bg-indigo-700"
-
-    };
-
-    toast.className = `p-3 rounded-xl shadow-xl text-sm ${colors[type] || colors.info}`;
-
-    toast.textContent = message;
-
-    $("toastContainer").appendChild(toast);
-
-    setTimeout(() => toast.remove(), 4000);
-
-  }
-
-
-
-  function openModal(id) {
-
-    $(id).hidden = false;
-
-    document.body.style.overflow = "hidden";
-
-  }
-
-
-
-  function closeModal(id) {
-
-    $(id).hidden = true;
-
-    const anyOpen = ["loginModal", "submitModal", "adminPanelModal"]
-
-      .some(modalId => !$(modalId).hidden);
-
-    if (!anyOpen) document.body.style.overflow = "";
-
-  }
-
-
-
-  document.querySelectorAll("[data-close]").forEach(button => {
-
-    button.addEventListener("click", () => closeModal(button.dataset.close));
-
-  });
-
-
-
-  $("openLoginModalBtn").addEventListener("click", () => {
-
-    $("loginErrorText").hidden = true;
-
-    openModal("loginModal");
-
-  });
-
-
-
-  $("openSubmitModalBtn").addEventListener("click", () => {
-
-    if (!state.currentUser) {
-
-      showToast("Connecte-toi avant d'ajouter une application.", "error");
-
-      openModal("loginModal");
-
-      return;
-
-    }
-
-    openModal("submitModal");
-
-  });
-
-
-
-  $("retryLoadBtn").addEventListener("click", () => {
-
-    $("loadError").hidden = true;
-
-    $("loadingMessage").hidden = false;
-
-    startAppsListener();
-
-  });
-
-
-
-  function safeText(value, fallback = "") {
-
-    return typeof value === "string" ? value : fallback;
-
-  }
-
-
-
-  function safeUrl(value) {
-
-    try {
-
-      const url = new URL(value);
-
-      if (url.protocol === "https:" || url.protocol === "http:") return url.href;
-
-    } catch (_) {}
-
-    return "";
-
-  }
-
-
-
-  function setStatus(message, online = false) {
-
-    $("connectionStatus").textContent = message;
-
-    $("connectionStatus").className = online
-
-      ? "text-xs text-emerald-400 mt-1"
-
-      : "text-xs text-slate-400 mt-1";
-
-  }
-
-
-
-  function explainFirebaseError(error) {
-
-    const code = error?.code || "";
-
-    const messages = {
-
-      "auth/invalid-credential": "Identifiants incorrects.",
-
-      "auth/invalid-login-credentials": "E-mail ou mot de passe incorrect.",
-
-      "auth/user-not-found": "Aucun compte Firebase correspondant.",
-
-      "auth/wrong-password": "Mot de passe incorrect.",
-
-      "auth/too-many-requests": "Trop de tentatives. Réessaie plus tard.",
-
-      "auth/operation-not-allowed": "Active la connexion par e-mail/mot de passe dans Firebase Authentication.",
-
-      "auth/network-request-failed": "Connexion Internet indisponible.",
-
-      "PERMISSION_DENIED": "Accès refusé par les règles Firebase.",
-
-      "permission-denied": "Accès refusé par les règles Firebase."
-
-    };
-
-    if (messages[code]) return messages[code];
-
-    if (code.includes("permission-denied")) {
-
-      return "Accès refusé. Vérifie les règles Realtime Database.";
-
-    }
-
-    return error?.message || "Une erreur inconnue est survenue.";
-
-  }
-
-
-
-  function updateUserUI() {
-
-    const user = state.currentUser;
-
-    const section = $("userAccountSection");
-
-    section.replaceChildren();
-
-
-
-    if (!user) {
-
-      state.currentRole = "";
-
-      state.isAdmin = false;
-      state.canDevelop = false;
-
-
-
-      const button = document.createElement("button");
-
-      button.id = "openLoginModalBtn";
-
-      button.className = "px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm";
-
-      button.textContent = "Connexion";
-
-      button.addEventListener("click", () => {
-
-        $("loginErrorText").hidden = true;
-
-        openModal("loginModal");
-
-      });
-
-
-
-      section.appendChild(button);
-
-      $("openSubmitModalBtn").hidden = true;
-
-      $("adminLink").hidden = true;
-      $("developerLink").hidden = true;
-      $("userSpaceLink").hidden = true;
-
-      renderApps();
-
-      return;
-
-    }
-
-
-
-    const wrapper = document.createElement("div");
-
-    wrapper.className = "flex items-center gap-2 flex-wrap";
-
-
-
-    const label = document.createElement("span");
-
-    label.className = "text-xs text-slate-300 max-w-36 truncate";
-
-    label.textContent = user.username || user.email;
-
-
-
-    const logout = document.createElement("button");
-
-    logout.className = "px-3 py-2 rounded-lg bg-slate-800 hover:bg-rose-800 text-sm";
-
-    logout.textContent = "Déconnexion";
-
-    logout.addEventListener("click", async () => {
-
-      try {
-
-        await signOut(auth);
-
-        showToast("Déconnexion réussie.", "success");
-
-      } catch (error) {
-
-        showToast(explainFirebaseError(error), "error");
-
-      }
-
-    });
-
-
-
-    wrapper.append(label, logout);
-
-    section.appendChild(wrapper);
-
-    $("openSubmitModalBtn").hidden = false;
-
-    $("adminLink").hidden = !state.isAdmin;
-    $("developerLink").hidden = !state.canDevelop;
-    $("userSpaceLink").hidden = false;
-
-    renderApps();
-
-  }
-
-
-
-  onAuthStateChanged(auth, async user => {
-
-    state.currentUser = user ? {
-
-      username: (user.email || "").toLowerCase(),
-
-      email: (user.email || "").toLowerCase(),
-
-      uid: user.uid
-
-    } : null;
-
-
-
-    await loadCurrentRole(user);
-
-    updateUserUI();
-
-  });
-
-
-
-  $("loginForm").addEventListener("submit", async event => {
-
-    event.preventDefault();
-
-
-
-    const email = $("loginUsername").value.trim().toLowerCase();
-
-    const password = $("loginPassword").value;
-
-    const errorBox = $("loginErrorText");
-
-    const submitButton = $("loginSubmitBtn");
-
-
-
-    errorBox.hidden = true;
-
-    submitButton.disabled = true;
-
-    submitButton.textContent = "Connexion...";
-
-
-
-    try {
-
-      if (!email.includes("@")) {
-
-        throw new Error("Saisis ton adresse e-mail complète.");
-
-      }
-
-
-
-      const credential = await signInWithEmailAndPassword(auth, email, password);
-
-      state.currentUser = {
-
-        username: (credential.user.email || email).toLowerCase(),
-
-        email: (credential.user.email || email).toLowerCase(),
-
-        uid: credential.user.uid
-
-      };
-
-
-
-      await loadCurrentRole(credential.user);
-
-      updateUserUI();
-
-      closeModal("loginModal");
-
-      $("loginForm").reset();
-
-      showToast("Connexion réussie !", "success");
-
-    } catch (error) {
-
-      console.error("Erreur de connexion :", error);
-
-      errorBox.textContent = explainFirebaseError(error);
-
-      errorBox.hidden = false;
-
-    } finally {
-
-      submitButton.disabled = false;
-
-      submitButton.textContent = "Se connecter";
-
-    }
-
-  });
-
-
-
-  function parseGitHubRepo(value) {
-
-    const clean = safeUrl(value);
-
-    if (!clean) return null;
-
-
-
-    try {
-
-      const url = new URL(clean);
-
-      if (url.hostname.toLowerCase() !== "github.com") return null;
-
-
-
-      const parts = url.pathname.split("/").filter(Boolean);
-
-      if (parts.length < 2) return null;
-
-
-
-      const owner = parts[0];
-
-      const repo = parts[1].replace(/\.git$/i, "");
-
-      if (!owner || !repo) return null;
-
-
-
-      return {
-
-        owner,
-
-        repo,
-
-        url: `https://github.com/${owner}/${repo}`
-
-      };
-
-    } catch (_) {
-
-      return null;
-
-    }
-
-  }
-
-
-
-  function versionCompare(a, b) {
-
-    const av = (a.tag_name || a.name || "").match(/\d+(?:\.\d+)*/g);
-
-    const bv = (b.tag_name || b.name || "").match(/\d+(?:\.\d+)*/g);
-
-
-
-    if (av && bv) {
-
-      const aa = av[0].split(".").map(Number);
-
-      const bb = bv[0].split(".").map(Number);
-
-
-
-      for (let i = 0; i < Math.max(aa.length, bb.length); i++) {
-
-        const diff = (bb[i] || 0) - (aa[i] || 0);
-
-        if (diff) return diff;
-
-      }
-
-    }
-
-
-
-    return new Date(b.published_at || b.created_at || 0) -
-
-      new Date(a.published_at || a.created_at || 0);
-
-  }
-
-
-
-  async function getGitHubVersions(repoUrl) {
-
-    const repo = parseGitHubRepo(repoUrl);
-
-    if (!repo) throw new Error("URL du dépôt GitHub invalide.");
-
-
-
-    const cacheKey = repo.url.toLowerCase();
-
-    const cached = versionsCache.get(cacheKey);
-
-
-
-    if (cached && Date.now() - cached.time < 120000) {
-
-      return cached.versions;
-
-    }
-
-
-
-    let allReleases = [];
-
-
-
-    for (let page = 1; page <= 3; page++) {
-
-      const endpoint =
-
-        `https://api.github.com/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/releases?per_page=100&page=${page}`;
-
-
-
-      const response = await fetch(endpoint, {
-
-        headers: { "Accept": "application/vnd.github+json" }
-
-      });
-
-
-
-      if (response.status === 404) {
-
-        throw new Error("Dépôt introuvable ou privé. Utilise un dépôt GitHub public.");
-
-      }
-
-      if (response.status === 403 || response.status === 429) {
-
-        throw new Error("Limite de requêtes GitHub atteinte. Réessaie plus tard.");
-
-      }
-
-      if (!response.ok) {
-
-        throw new Error(`GitHub a répondu avec l'erreur HTTP ${response.status}.`);
-
-      }
-
-
-
-      const releases = await response.json();
-
-      allReleases = allReleases.concat(releases);
-
-      if (releases.length < 100) break;
-
-    }
-
-
-
-    const versions = [];
-
-
-
-    for (const release of allReleases) {
-
-      const assets = Array.isArray(release.assets) ? release.assets : [];
-
-      const apkAssets = assets.filter(asset => /\.apk$/i.test(asset.name || ""));
-
-
-
-      for (const asset of apkAssets) {
-
-        versions.push({
-
-          name: release.name || release.tag_name || asset.name,
-
-          tag: release.tag_name || "",
-
-          publishedAt: release.published_at || release.created_at || "",
-
-          assetName: asset.name,
-
-          url: asset.browser_download_url,
-
-          size: asset.size || 0,
-
-          prerelease: !!release.prerelease
-
-        });
-
-      }
-
-    }
-
-
-
-    versions.sort((a, b) => versionCompare(
-
-      { tag_name: a.tag, name: a.name, published_at: a.publishedAt },
-
-      { tag_name: b.tag, name: b.name, published_at: b.publishedAt }
-
-    ));
-
-
-
-    versionsCache.set(cacheKey, { time: Date.now(), versions });
-
-    return versions;
-
-  }
-
-
-
-  function formatSize(bytes) {
-
-    if (!bytes) return "";
-
-    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
-
-    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-
-  }
-
-
-
-  function versionLabel(version) {
-
-    return version.tag || version.name || version.assetName || "Version";
-
-  }
-
-
-
-  function makeDownloadLink(url, label = "↓ Télécharger", extraClass = "") {
-
-    const safe = safeUrl(url);
-
-    const link = document.createElement("a");
-
-    link.className = `inline-flex items-center justify-center px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm ${extraClass}`;
-
-    link.textContent = label;
-
-
-
-    if (safe) {
-
-      link.href = safe;
-
-      link.target = "_blank";
-
-      link.rel = "noopener noreferrer";
-
-    } else {
-
-      link.href = "#";
-
-      link.setAttribute("aria-disabled", "true");
-
-      link.classList.add("opacity-50", "pointer-events-none");
-
-    }
-
-
-
-    return link;
-
-  }
-
-
-
-  async function renderGitHubVersions(container, app) {
-
-    const repo = parseGitHubRepo(app.repoUrl);
-
-
-
-    if (!repo) {
-
-      const link = safeUrl(app.downloadUrl);
-
-      if (link) container.appendChild(makeDownloadLink(link));
-
-      else {
-
-        const text = document.createElement("span");
-
-        text.className = "text-xs text-slate-500";
-
-        text.textContent = "Aucun lien APK disponible";
-
-        container.appendChild(text);
-
-      }
-
-      return;
-
-    }
-
-
-
-    const status = document.createElement("p");
-
-    status.className = "text-xs text-slate-400";
-
-    status.textContent = "Recherche des versions GitHub...";
-
-    container.appendChild(status);
-
-
-
-    try {
-
-      const versions = await getGitHubVersions(repo.url);
-
-      container.replaceChildren();
-
-
-
-      if (!versions.length) {
-
-        const note = document.createElement("p");
-
-        note.className = "text-xs text-slate-400";
-
-        note.textContent = "Aucun APK trouvé dans les Releases de ce dépôt.";
-
-        container.appendChild(note);
-
-
-
-        const fallback = safeUrl(app.downloadUrl);
-
-        if (fallback) {
-
-          container.appendChild(makeDownloadLink(fallback, "Télécharger l'APK indiqué"));
-
-        }
-
-
-
-        const repoLink = document.createElement("a");
-
-        repoLink.href = repo.url + "/releases";
-
-        repoLink.target = "_blank";
-
-        repoLink.rel = "noopener noreferrer";
-
-        repoLink.className = "text-xs text-indigo-300 underline";
-
-        repoLink.textContent = "Voir les Releases GitHub";
-
-        container.appendChild(repoLink);
-
-        return;
-
-      }
-
-
-
-      const latest = versions[0];
-
-      const latestRow = document.createElement("div");
-
-      latestRow.className = "flex flex-col gap-2";
-
-
-
-      const latestTitle = document.createElement("div");
-
-      latestTitle.className = "min-w-0";
-
-
-
-      const latestBadge = document.createElement("span");
-
-      latestBadge.className = "inline-block text-xs font-semibold text-emerald-300 bg-emerald-950 border border-emerald-800 rounded-full px-2 py-1";
-
-      latestBadge.textContent = "Dernière version";
-
-
-
-      const latestName = document.createElement("p");
-
-      latestName.className = "text-sm font-semibold break-words mt-2";
-
-      latestName.textContent = versionLabel(latest);
-
-
-
-      const assetLabel = document.createElement("p");
-
-      assetLabel.className = "text-xs text-slate-500 break-all";
-
-      assetLabel.textContent = latest.assetName +
-
-        (latest.size ? ` · ${formatSize(latest.size)}` : "");
-
-
-
-      latestTitle.append(latestBadge, latestName, assetLabel);
-
-
-
-      const latestActions = document.createElement("div");
-
-      latestActions.className = "flex flex-wrap items-center gap-2";
-
-      latestActions.appendChild(makeDownloadLink(latest.url));
-
-
-
-      if (versions.length > 1) {
-
-        const toggle = document.createElement("button");
-
-        toggle.type = "button";
-
-        toggle.className = "px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm";
-
-        toggle.setAttribute("aria-expanded", "false");
-
-        toggle.textContent = `Afficher les autres versions (${versions.length - 1}) ▾`;
-
-
-
-        const olderWrap = document.createElement("div");
-
-        olderWrap.hidden = true;
-
-        olderWrap.className = "mt-3 space-y-2 border-t border-slate-800 pt-3";
-
-
-
-        for (const version of versions.slice(1)) {
-
-          const row = document.createElement("div");
-
-          row.className = "flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-slate-950/70 border border-slate-800 p-3";
-
-
-
-          const info = document.createElement("div");
-
-          info.className = "min-w-0";
-
-
-
-          const title = document.createElement("p");
-
-          title.className = "text-sm font-medium break-words";
-
-          title.textContent = versionLabel(version);
-
-
-
-          const filename = document.createElement("p");
-
-          filename.className = "text-xs text-slate-500 break-all";
-
-          filename.textContent = version.assetName +
-
-            (version.size ? ` · ${formatSize(version.size)}` : "");
-
-
-
-          info.append(title, filename);
-
-          row.append(info, makeDownloadLink(version.url));
-
-          olderWrap.appendChild(row);
-
-        }
-
-
-
-        toggle.addEventListener("click", () => {
-
-          const expanded = toggle.getAttribute("aria-expanded") === "true";
-
-          toggle.setAttribute("aria-expanded", String(!expanded));
-
-          olderWrap.hidden = expanded;
-
-          toggle.textContent = expanded
-
-            ? `Afficher les autres versions (${versions.length - 1}) ▾`
-
-            : "Masquer les anciennes versions ▴";
-
-        });
-
-
-
-        latestActions.appendChild(toggle);
-
-        container.append(latestRow, olderWrap);
-
-      }
-
-
-
-      latestRow.append(latestTitle, latestActions);
-
-      if (versions.length === 1) container.appendChild(latestRow);
-
-
-
-    } catch (error) {
-
-      console.warn("Impossible de récupérer les versions GitHub :", error);
-
-      container.replaceChildren();
-
-
-
-      const note = document.createElement("p");
-
-      note.className = "text-xs text-amber-300";
-
-      note.textContent = "Versions GitHub indisponibles : " +
-
-        (error?.message || "erreur réseau");
-
-      container.appendChild(note);
-
-
-
-      const fallback = safeUrl(app.downloadUrl);
-
-      if (fallback) container.appendChild(makeDownloadLink(fallback));
-
-
-
-      const repoLink = document.createElement("a");
-
-      repoLink.href = repo.url + "/releases";
-
-      repoLink.target = "_blank";
-
-      repoLink.rel = "noopener noreferrer";
-
-      repoLink.className = "text-xs text-indigo-300 underline";
-
-      repoLink.textContent = "Ouvrir les Releases GitHub";
-
-      container.appendChild(repoLink);
-
-    }
-
-  }
-
-
-
-  function startAppsListener() {
-
-    if (unsubscribeApps) unsubscribeApps();
-
-
-
-    state.appsError = null;
-
-    $("loadError").hidden = true;
-
-    $("loadingMessage").hidden = false;
-
-    $("loadingMessage").textContent = "Chargement des applications...";
-
-
-
-    unsubscribeApps = onValue(ref(db, "apps"), snapshot => {
-
-      const data = snapshot.val() || {};
-
-
-
-      state.apps = Object.entries(data).map(([id, app]) => ({
-
-        id,
-
-        ...(app || {}),
-
-        name: safeText(app?.name, "Application sans nom"),
-
-        category: safeText(app?.category, "Utilitaires"),
-
-        description: safeText(app?.description),
-
-        author: safeText(app?.author, "Anonyme").toLowerCase(),
-
-        downloadUrl: safeText(app?.downloadUrl),
-
-        repoUrl: safeText(app?.repoUrl),
-
-        iconUrl: safeText(app?.iconUrl)
-
-      }));
-
-
-
-      state.appsLoaded = true;
-
-      state.appsError = null;
-
-      $("loadingMessage").hidden = true;
-
-      $("loadError").hidden = true;
-
-      setStatus("Firebase connecté", true);
-
-      renderApps();
-
-
-
-    }, error => {
-
-      console.error("Erreur de lecture des applications :", error);
-
-      state.appsError = error;
-
-      $("loadingMessage").hidden = true;
-
-      $("loadError").hidden = false;
-
-      $("loadErrorText").textContent =
-
-        "Impossible de charger les applications : " + explainFirebaseError(error);
-
-      setStatus("Erreur Firebase");
-
-    });
-
-  }
-
-
-
-  function createIconButton(iconName, label, onClick, extraClasses = "hover:bg-slate-700") {
-
-    const button = document.createElement("button");
-
-    button.type = "button";
-
-    button.className = `p-2 rounded-lg bg-slate-800 ${extraClasses}`;
-
-    button.title = label;
-
-    button.setAttribute("aria-label", label);
-
-
-
-    const icon = document.createElement("i");
-
-    icon.setAttribute("data-lucide", iconName);
-
-    icon.className = "w-4 h-4";
-
-
-
-    button.appendChild(icon);
-
-    button.addEventListener("click", onClick);
-
-    return button;
-
-  }
-
-
-
-  // Suppression réservée aux administrateurs connectés.
-
-  async function deleteApp(appId) {
-
-    if (!state.currentUser || !state.isAdmin) {
-
-      showToast("Seuls les administrateurs peuvent supprimer une application.", "error");
-
-      return;
-
-    }
-
-
-
-    if (!confirm("Supprimer définitivement cette application du catalogue ? Cette action est irréversible.")) {
-
-      return;
-
-    }
-
-
-
-    try {
-
-      await remove(ref(db, "apps/" + appId));
-
-      showToast("Application supprimée.", "success");
-
-    } catch (error) {
-
-      showToast(explainFirebaseError(error), "error");
-
-    }
-
-  }
-
-
-
-  function renderApps() {
-
-    const grid = $("appGrid");
-
-    grid.replaceChildren();
-
-
-
-    const term = state.search.toLocaleLowerCase("fr");
-
-    const filtered = state.apps.filter(app => {
-
-      const categoryMatch =
-
-        state.category === "all" || app.category === state.category;
-
-      const searchMatch =
-
-        (app.name + " " + app.description + " " + app.author)
-
-          .toLocaleLowerCase("fr").includes(term);
-
-
-
-      return categoryMatch && searchMatch;
-
-    });
-
-
-
-    $("emptyState").hidden =
-
-      filtered.length !== 0 || !state.appsLoaded || !!state.appsError;
-
-
-
-    for (const app of filtered) {
-
-      const card = document.createElement("article");
-
-      card.className =
-
-        "bg-slate-900 border border-slate-800 hover:border-indigo-500/60 rounded-2xl p-5 flex flex-col gap-5";
-
-
-
-      const top = document.createElement("div");
-
-      const heading = document.createElement("div");
-
-      heading.className = "flex items-start gap-3";
-
-
-
-      const img = document.createElement("img");
-
-      img.className = "w-12 h-12 rounded-xl object-cover bg-slate-950 border border-slate-800";
-
-      img.alt = "";
-
-      img.loading = "lazy";
-
-      img.src = safeUrl(app.iconUrl) ||
-
-        "https://placehold.co/64x64/0f172a/ffffff?text=APK";
-
-
-
-      img.addEventListener("error", () => {
-
-        img.src = "https://placehold.co/64x64/0f172a/ffffff?text=APK";
-
-      }, { once: true });
-
-
-
-      const details = document.createElement("div");
-
-      details.className = "min-w-0 flex-1";
-
-
-
-      const title = document.createElement("h2");
-
-      title.className = "font-bold break-words";
-
-      title.textContent = app.name;
-
-
-
-      const category = document.createElement("span");
-
-      category.className = "inline-block mt-2 px-2 py-1 rounded bg-slate-800 text-xs text-slate-300";
-
-      category.textContent = app.category;
-
-
-
-      details.append(title, category);
-
-      heading.append(img, details);
-
-
-
-      // Le bouton de suppression n'est affiché qu'aux administrateurs.
-
-      if (state.currentUser && state.isAdmin) {
-
-        heading.appendChild(createIconButton(
-
-          "trash-2",
-
-          "Supprimer l’application (administrateur)",
-
-          () => deleteApp(app.id),
-
-          "hover:bg-rose-800 text-rose-400 hover:text-white"
-
-        ));
-
-      }
-
-
-
-      const description = document.createElement("p");
-
-      description.className =
-
-        "text-sm text-slate-400 mt-4 whitespace-pre-wrap break-words";
-
-      description.textContent =
-
-        app.description || "Aucune description disponible.";
-
-
-
-      top.append(heading, description);
-
-
-
-      const downloads = document.createElement("div");
-
-      downloads.className =
-
-        "space-y-2 rounded-xl border border-slate-800 bg-slate-900/60 p-3";
-
-
-
-      const downloadsTitle = document.createElement("p");
-
-      downloadsTitle.className = "text-xs uppercase tracking-wide text-slate-500";
-
-      downloadsTitle.textContent = "Téléchargements";
-
-
-
-      const versionsContainer = document.createElement("div");
-
-      versionsContainer.className = "space-y-3";
-
-
-
-      downloads.append(downloadsTitle, versionsContainer);
-
-      renderGitHubVersions(versionsContainer, app);
-
-
-
-      const footer = document.createElement("div");
-
-      footer.className =
-
-        "border-t border-slate-800 pt-4 flex items-center justify-between gap-3";
-
-
-
-      const author = document.createElement("span");
-
-      author.className = "text-xs text-slate-500 break-all";
-
-      author.textContent = "Par " + app.author;
-
-
-
-      const links = document.createElement("div");
-
-      links.className = "flex items-center gap-2 shrink-0";
-
-
-
-      const repo = parseGitHubRepo(app.repoUrl);
-
-
-
-      if (repo) {
-
-        const repoLink = document.createElement("a");
-
-        repoLink.href = repo.url;
-
-        repoLink.target = "_blank";
-
-        repoLink.rel = "noopener noreferrer";
-
-        repoLink.className = "p-2 rounded-lg bg-slate-800 hover:bg-slate-700";
-
-        repoLink.title = "Code source";
-
-
-
-        const icon = document.createElement("i");
-
-        icon.setAttribute("data-lucide", "github");
-
-        icon.className = "w-4 h-4";
-
-
-
-        repoLink.appendChild(icon);
-
-        links.appendChild(repoLink);
-
-      } else {
-
-        const repoUrl = safeUrl(app.repoUrl);
-
-
-
-        if (repoUrl) {
-
-          const repoLink = document.createElement("a");
-
-          repoLink.href = repoUrl;
-
-          repoLink.target = "_blank";
-
-          repoLink.rel = "noopener noreferrer";
-
-          repoLink.className = "p-2 rounded-lg bg-slate-800 hover:bg-slate-700";
-
-          repoLink.title = "Code source";
-
-
-
-          const icon = document.createElement("i");
-
-          icon.setAttribute("data-lucide", "github");
-
-          icon.className = "w-4 h-4";
-
-
-
-          repoLink.appendChild(icon);
-
-          links.appendChild(repoLink);
-
-        }
-
-      }
-
-
-
-      footer.append(author, links);
-
-      card.append(top, downloads, footer);
-
-      grid.appendChild(card);
-
-    }
-
-
-
-    if (window.lucide) window.lucide.createIcons();
-
-  }
-
-
-
-  $("searchInput").addEventListener("input", event => {
-
-    state.search = event.target.value;
-
-    renderApps();
-
-  });
-
-
-
-  document.querySelectorAll(".category-btn").forEach(button => {
-
-    button.addEventListener("click", () => {
-
-      state.category = button.dataset.category;
-
-
-
-      document.querySelectorAll(".category-btn").forEach(item => {
-
-        item.classList.remove("bg-indigo-600", "text-white");
-
-        item.classList.add("bg-slate-800");
-
-      });
-
-
-
-      button.classList.add("bg-indigo-600", "text-white");
-
-      button.classList.remove("bg-slate-800");
-
-      renderApps();
-
-    });
-
-  });
-
-
-
-  $("addAppForm").addEventListener("submit", async event => {
-
-    event.preventDefault();
-
-
-
-    const error = $("addAppError");
-
-    error.hidden = true;
-
-
-
-    if (!state.currentUser) {
-
-      error.textContent = "Connecte-toi avant de publier.";
-
-      error.hidden = false;
-
-      return;
-
-    }
-
-
-
-    const downloadUrl = safeUrl($("appDownloadUrl").value.trim());
-
-    const repoValue = $("appRepoUrl").value.trim();
-
-    const iconValue = $("appIconUrl").value.trim();
-
-
-
-    if (!downloadUrl) {
-
-      error.textContent = "Le lien de téléchargement doit être une URL HTTP ou HTTPS valide.";
-
-      error.hidden = false;
-
-      return;
-
-    }
-
-
-
-    if (repoValue && !parseGitHubRepo(repoValue)) {
-
-      error.textContent = "L'URL du dépôt doit être du type https://github.com/proprietaire/depot.";
-
-      error.hidden = false;
-
-      return;
-
-    }
-
-
-
-    const button = $("publishBtn");
-
-    button.disabled = true;
-
-    button.textContent = "Publication...";
-
-
-
-    try {
-
-      await push(ref(db, "apps"), {
-
-        name: $("appName").value.trim(),
-
-        category: $("appCategory").value,
-
-        downloadUrl,
-
-        repoUrl: parseGitHubRepo(repoValue)?.url || "",
-
-        iconUrl: safeUrl(iconValue),
-
-        description: $("appDescription").value.trim(),
-
-        author: state.currentUser.username,
-
-        createdAt: Date.now()
-
-      });
-
-
-
-      $("addAppForm").reset();
-
-      closeModal("submitModal");
-
-      showToast("Application publiée !", "success");
-
-
-
-    } catch (err) {
-
-      console.error(err);
-
-      error.textContent = explainFirebaseError(err);
-
-      error.hidden = false;
-
-    } finally {
-
-      button.disabled = false;
-
-      button.textContent = "Publier";
-
-    }
-
-  });
-
-
-
-  startAppsListener();
-
-
-
-  if (window.lucide) window.lucide.createIcons();
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue, push, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDBd_NPKinJ6Vu4Wk_98rNaM75NBNMaGdo",
+  authDomain: "openstore-be393.firebaseapp.com",
+  databaseURL: "https://openstore-be393-default-rtdb.firebaseio.com",
+  projectId: "openstore-be393",
+  storageBucket: "openstore-be393.firebasestorage.app",
+  messagingSenderId: "615451083226",
+  appId: "1:615451083226:web:2ccfdad00c8474088180e3",
+  measurementId: "G-1CRYGEK1G0"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getDatabase(firebaseApp);
+const auth = getAuth(firebaseApp);
+const $ = id => document.getElementById(id);
+const state = { currentUser:null, currentRole:"", isAdmin:false, canDevelop:false, apps:[], category:"all", search:"", appsLoaded:false, appsError:null };
+let unsubscribeApps = null;
+const versionsCache = new Map();
+const emailKey = value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "_");
+
+function showToast(message,type="info") {
+  const toast=document.createElement("div");
+  const colors={success:"bg-emerald-700",error:"bg-rose-700",info:"bg-indigo-700"};
+  toast.className=`p-3 rounded-xl shadow-xl text-sm ${colors[type]||colors.info}`;
+  toast.textContent=message; $("toastContainer").appendChild(toast); setTimeout(()=>toast.remove(),4000);
+}
+function openModal(id){$(id).hidden=false;document.body.style.overflow="hidden";}
+function closeModal(id){$(id).hidden=true;if(["loginModal","submitModal"].every(mid=>$(mid).hidden))document.body.style.overflow="";}
+document.querySelectorAll("[data-close]").forEach(button=>button.addEventListener("click",()=>closeModal(button.dataset.close)));
+$("openLoginModalBtn").addEventListener("click",()=>{$("loginErrorText").hidden=true;openModal("loginModal");});
+$("openSubmitModalBtn").addEventListener("click",()=>{if(!state.currentUser){showToast("Connecte-toi avant de proposer une application.","error");openModal("loginModal");return;}openModal("submitModal");});
+$("retryLoadBtn").addEventListener("click",()=>{ $("loadError").hidden=true;$("loadingMessage").hidden=false;startAppsListener(); });
+function safeText(value,fallback=""){return typeof value==="string"?value:fallback;}
+function safeUrl(value){try{const url=new URL(value);if(url.protocol==="https:"||url.protocol==="http:")return url.href;}catch(_){}return "";}
+function setStatus(message,online=false){$("connectionStatus").textContent=message;$("connectionStatus").className=online?"text-xs text-emerald-400 mt-1":"text-xs text-slate-400 mt-1";}
+function explainFirebaseError(error){
+  const code=error?.code||"";
+  const messages={
+    "auth/invalid-credential":"E-mail ou mot de passe incorrect.",
+    "auth/invalid-login-credentials":"E-mail ou mot de passe incorrect.",
+    "auth/user-not-found":"Aucun compte Firebase correspondant.",
+    "auth/wrong-password":"Mot de passe incorrect.",
+    "auth/too-many-requests":"Trop de tentatives. Réessaie plus tard.",
+    "auth/operation-not-allowed":"Active la connexion par e-mail/mot de passe dans Firebase Authentication.",
+    "auth/network-request-failed":"Connexion Internet indisponible.",
+    "PERMISSION_DENIED":"Accès refusé par les règles Firebase.",
+    "permission-denied":"Accès refusé par les règles Firebase."
+  };
+  return messages[code]||error?.message||"Une erreur inconnue est survenue.";
+}
+async function loadCurrentRole(user){
+  state.currentRole="";state.isAdmin=false;state.canDevelop=false;
+  if(!user?.email)return;
+  try{
+    const snap=await get(ref(db,"store_users/"+emailKey(user.email)));
+    const record=snap.val()||{};
+    state.currentRole=String(record.role||"").toLowerCase();
+    state.isAdmin=["admin","administrateur"].includes(state.currentRole);
+    state.canDevelop=["codeur","programmeur","admin","administrateur"].includes(state.currentRole);
+  }catch(error){console.warn("Impossible de lire le rôle OpenStore",error);state.isAdmin=false;state.canDevelop=false;}
+}
+function updateUserUI(){
+  const section=$("userAccountSection");section.replaceChildren();
+  if(!state.currentUser){
+    state.currentRole="";state.isAdmin=false;state.canDevelop=false;
+    const button=document.createElement("button");button.className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm";
+    button.innerHTML='<i data-lucide="log-in" class="inline w-4 h-4"></i> Connexion';
+    button.addEventListener("click",()=>{ $("loginErrorText").hidden=true;openModal("loginModal"); });
+    section.appendChild(button);
+    $("openSubmitModalBtn").hidden=true;$("adminLink").hidden=true;$("developerLink").hidden=true;$("userSpaceLink").hidden=true;
+    renderApps();if(window.lucide)window.lucide.createIcons();return;
+  }
+  const wrapper=document.createElement("div");wrapper.className="flex items-center gap-2 flex-wrap";
+  const label=document.createElement("span");label.className="text-sm text-slate-300";label.textContent=state.currentUser.email;
+  const logout=document.createElement("button");logout.className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm";logout.textContent="Déconnexion";
+  logout.addEventListener("click",async()=>{try{await signOut(auth);showToast("Déconnexion réussie.","success");}catch(e){showToast(explainFirebaseError(e),"error");}});
+  wrapper.append(label,logout);section.appendChild(wrapper);
+  $("openSubmitModalBtn").hidden=false;$("adminLink").hidden=!state.isAdmin;$("developerLink").hidden=!state.canDevelop;$("userSpaceLink").hidden=false;
+  renderApps();if(window.lucide)window.lucide.createIcons();
+}
+onAuthStateChanged(auth,async user=>{
+  state.currentUser=user?{username:(user.email||"").toLowerCase(),email:(user.email||"").toLowerCase(),uid:user.uid}:null;
+  await loadCurrentRole(user);updateUserUI();
+});
+$("loginForm").addEventListener("submit",async event=>{
+  event.preventDefault();const email=$("loginUsername").value.trim().toLowerCase();const password=$("loginPassword").value;const errorBox=$("loginErrorText");
+  errorBox.hidden=true;$("loginSubmitBtn").disabled=true;$("loginSubmitBtn").textContent="Connexion…";
+  try{
+    const credential=await signInWithEmailAndPassword(auth,email,password);
+    state.currentUser={username:(credential.user.email||email).toLowerCase(),email:(credential.user.email||email).toLowerCase(),uid:credential.user.uid};
+    await loadCurrentRole(credential.user);updateUserUI();closeModal("loginModal");$("loginForm").reset();showToast("Connexion réussie !","success");
+  }catch(error){console.error("Erreur de connexion:",error);errorBox.textContent=explainFirebaseError(error);errorBox.hidden=false;}
+  finally{$("loginSubmitBtn").disabled=false;$("loginSubmitBtn").textContent="Se connecter";}
+});
+
+function parseGitHubRepo(value){
+  try{const url=new URL(value);if(url.hostname.toLowerCase()!=="github.com")return null;const parts=url.pathname.split("/").filter(Boolean);if(parts.length<2)return null;return {owner:parts[0],name:parts[1].replace(/\.git$/,""),url:`https://github.com/${parts[0]}/${parts[1].replace(/\.git$/,"")}`};}catch(_){return null;}
+}
+async function getGitHubVersions(repoUrl){
+  const repo=parseGitHubRepo(repoUrl);if(!repo)return [];
+  const cacheKey=repo.url;const cached=versionsCache.get(cacheKey);if(cached&&Date.now()-cached.time<5*60*1000)return cached.versions;
+  const response=await fetch(`https://api.github.com/repos/${repo.owner}/${repo.name}/releases?per_page=20`,{headers:{Accept:"application/vnd.github+json"}});
+  if(!response.ok)throw new Error(response.status===403?"Limite temporaire de l’API GitHub atteinte.":`GitHub a répondu ${response.status}.`);
+  const releases=await response.json();const versions=[];
+  for(const release of releases){
+    for(const asset of (release.assets||[])){
+      if(/\.apk$/i.test(asset.name))versions.push({tag:release.tag_name||"",name:release.name||"",publishedAt:release.published_at||release.created_at||"",assetName:asset.name,url:asset.browser_download_url,size:asset.size||0,prerelease:!!release.prerelease});
+    }
+  }
+  versions.sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt)));
+  versionsCache.set(cacheKey,{time:Date.now(),versions});return versions;
+}
+function formatSize(bytes){if(!bytes)return "";if(bytes<1024*1024)return `${Math.max(1,Math.round(bytes/1024))} Ko`;return `${(bytes/(1024*1024)).toFixed(1)} Mo`;}
+function makeDownloadLink(url,label="↓ Télécharger"){
+  const link=document.createElement("a");const safe=safeUrl(url);link.className="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm";link.textContent=label;
+  if(safe){link.href=safe;link.target="_blank";link.rel="noopener noreferrer";}else{link.href="#";link.setAttribute("aria-disabled","true");link.classList.add("opacity-50","pointer-events-none");}return link;
+}
+async function renderGitHubVersions(container,app){
+  const repo=parseGitHubRepo(app.repoUrl);
+  if(!repo){const link=safeUrl(app.downloadUrl);if(link)container.appendChild(makeDownloadLink(link));else container.textContent="Aucun lien APK disponible.";return;}
+  const status=document.createElement("p");status.className="text-xs text-slate-400";status.textContent="Recherche des versions GitHub…";container.appendChild(status);
+  try{
+    const versions=await getGitHubVersions(repo.url);container.replaceChildren();
+    if(!versions.length){const note=document.createElement("p");note.className="text-xs text-slate-400";note.textContent="Aucun APK détecté dans les Releases GitHub.";container.appendChild(note);const fallback=safeUrl(app.downloadUrl);if(fallback)container.appendChild(makeDownloadLink(fallback,"Télécharger l’APK indiqué"));const repoLink=document.createElement("a");repoLink.href=repo.url+"/releases";repoLink.target="_blank";repoLink.rel="noopener noreferrer";repoLink.className="text-xs text-indigo-300 underline";repoLink.textContent="Voir les Releases GitHub";container.appendChild(repoLink);return;}
+    const latest=versions[0];const title=document.createElement("p");title.className="text-sm font-semibold break-words";title.textContent=latest.tag||latest.name||latest.assetName;
+    const file=document.createElement("p");file.className="text-xs text-slate-500 break-all";file.textContent=latest.assetName+(latest.size?` · ${formatSize(latest.size)}`:"");
+    container.append(title,file,makeDownloadLink(latest.url));
+    if(versions.length>1){
+      const toggle=document.createElement("button");toggle.type="button";toggle.className="ml-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm";toggle.textContent=`Autres versions (${versions.length-1}) ▾`;
+      const older=document.createElement("div");older.hidden=true;older.className="mt-3 space-y-2 border-t border-slate-800 pt-3";
+      versions.slice(1).forEach(v=>{const row=document.createElement("div");row.className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-slate-950/70 border border-slate-800 p-3";const info=document.createElement("div");const t=document.createElement("p");t.className="text-sm";t.textContent=v.tag||v.name||v.assetName;const f=document.createElement("p");f.className="text-xs text-slate-500 break-all";f.textContent=v.assetName+(v.size?` · ${formatSize(v.size)}`:"");info.append(t,f);row.append(info,makeDownloadLink(v.url));older.appendChild(row);});
+      toggle.addEventListener("click",()=>{older.hidden=!older.hidden;toggle.textContent=older.hidden?`Autres versions (${versions.length-1}) ▾`:"Masquer les anciennes versions ▴";});container.append(toggle,older);
+    }
+  }catch(error){container.replaceChildren();const note=document.createElement("p");note.className="text-xs text-amber-300";note.textContent="Versions GitHub indisponibles : "+(error?.message||"erreur réseau");container.appendChild(note);const fallback=safeUrl(app.downloadUrl);if(fallback)container.appendChild(makeDownloadLink(fallback));const link=document.createElement("a");link.href=repo.url+"/releases";link.target="_blank";link.rel="noopener noreferrer";link.className="block text-xs text-indigo-300 underline mt-2";link.textContent="Ouvrir les Releases GitHub";container.appendChild(link);}
+}
+function createIconButton(iconName,label,onClick){
+  const button=document.createElement("button");button.type="button";button.className="p-2 rounded-lg bg-slate-800 hover:bg-rose-800 text-rose-400 hover:text-white";button.title=label;button.setAttribute("aria-label",label);
+  const icon=document.createElement("i");icon.setAttribute("data-lucide",iconName);icon.className="w-4 h-4";button.appendChild(icon);button.addEventListener("click",onClick);return button;
+}
+async function deleteApp(appId){
+  if(!state.currentUser||!state.isAdmin){showToast("Seuls les administrateurs peuvent supprimer une application.","error");return;}
+  if(!confirm("Supprimer définitivement cette application du catalogue ? Cette action est irréversible."))return;
+  try{await remove(ref(db,"apps/"+appId));showToast("Application supprimée.","success");}
+  catch(error){showToast(explainFirebaseError(error),"error");}
+}
+function renderApps(){
+  const grid=$("appGrid");grid.replaceChildren();const term=state.search.toLocaleLowerCase("fr");
+  const filtered=state.apps.filter(app=>(state.category==="all"||app.category===state.category)&&(app.name+" "+app.description+" "+app.author).toLocaleLowerCase("fr").includes(term));
+  $("emptyState").hidden=filtered.length!==0||!state.appsLoaded||!!state.appsError;
+  for(const app of filtered){
+    const card=document.createElement("article");card.className="bg-slate-900 border border-slate-800 hover:border-indigo-500/60 rounded-2xl p-5 flex flex-col gap-5";
+    const top=document.createElement("div");const heading=document.createElement("div");heading.className="flex items-start gap-3";
+    const img=document.createElement("img");img.className="w-12 h-12 rounded-xl object-cover bg-slate-950 border border-slate-800";img.alt="";img.loading="lazy";img.src=safeUrl(app.iconUrl)||"https://placehold.co/64x64/0f172a/ffffff?text=APK";img.addEventListener("error",()=>{img.src="https://placehold.co/64x64/0f172a/ffffff?text=APK";},{once:true});
+    const details=document.createElement("div");details.className="min-w-0 flex-1";const title=document.createElement("h2");title.className="font-bold break-words";title.textContent=app.name;const category=document.createElement("span");category.className="inline-block mt-2 px-2 py-1 rounded bg-slate-800 text-xs text-slate-300";category.textContent=app.category;details.append(title,category);heading.append(img,details);
+    if(state.currentUser&&state.isAdmin)heading.appendChild(createIconButton("trash-2","Supprimer l’application (administrateur)",()=>deleteApp(app.id)));
+    const description=document.createElement("p");description.className="text-sm text-slate-400 mt-4 whitespace-pre-wrap break-words";description.textContent=app.description||"Aucune description disponible.";top.append(heading,description);
+    const downloads=document.createElement("div");downloads.className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/60 p-3";const dlTitle=document.createElement("p");dlTitle.className="text-xs uppercase tracking-wide text-slate-500";dlTitle.textContent="Téléchargements";const versions=document.createElement("div");versions.className="space-y-3";downloads.append(dlTitle,versions);renderGitHubVersions(versions,app);
+    const footer=document.createElement("div");footer.className="border-t border-slate-800 pt-4 flex items-center justify-between gap-3";const author=document.createElement("span");author.className="text-xs text-slate-500 break-all";author.textContent="Par "+app.author;footer.appendChild(author);
+    const repo=parseGitHubRepo(app.repoUrl);if(repo){const link=document.createElement("a");link.href=repo.url;link.target="_blank";link.rel="noopener noreferrer";link.className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700";link.title="Code source";const icon=document.createElement("i");icon.setAttribute("data-lucide","github");icon.className="w-4 h-4";link.appendChild(icon);footer.appendChild(link);}
+    card.append(top,downloads,footer);grid.appendChild(card);
+  }
+  if(window.lucide)window.lucide.createIcons();
+}
+function startAppsListener(){
+  if(unsubscribeApps)unsubscribeApps();state.appsError=null;$("loadError").hidden=true;$("loadingMessage").hidden=false;$("loadingMessage").textContent="Chargement des applications…";
+  unsubscribeApps=onValue(ref(db,"apps"),snapshot=>{
+    const data=snapshot.val()||{};state.apps=Object.entries(data).map(([id,app])=>({id,...(app||{}),name:safeText(app?.name,"Application sans nom"),category:safeText(app?.category,"Utilitaires"),description:safeText(app?.description),author:safeText(app?.author,"Anonyme").toLowerCase(),downloadUrl:safeText(app?.downloadUrl),repoUrl:safeText(app?.repoUrl),iconUrl:safeText(app?.iconUrl)}));
+    state.appsLoaded=true;state.appsError=null;$("loadingMessage").hidden=true;$("loadError").hidden=true;setStatus("Firebase connecté",true);renderApps();
+  },error=>{
+    console.error("Erreur de lecture des applications:",error);state.appsError=error;$("loadingMessage").hidden=true;$("loadError").hidden=false;$("loadErrorText").textContent="Impossible de charger les applications : "+explainFirebaseError(error);setStatus("Erreur Firebase");
+  });
+}
+$("searchInput").addEventListener("input",event=>{state.search=event.target.value;renderApps();});
+document.querySelectorAll(".category-btn").forEach(button=>button.addEventListener("click",()=>{
+  state.category=button.dataset.category;document.querySelectorAll(".category-btn").forEach(item=>{item.classList.remove("bg-indigo-600","text-white");item.classList.add("bg-slate-800");});
+  button.classList.add("bg-indigo-600","text-white");button.classList.remove("bg-slate-800");renderApps();
+}));
+$("addAppForm").addEventListener("submit",async event=>{
+  event.preventDefault();const error=$("addAppError");error.hidden=true;
+  if(!state.currentUser){error.textContent="Connecte-toi avant de publier.";error.hidden=false;return;}
+  const downloadUrl=safeUrl($("appDownloadUrl").value.trim());const repoValue=$("appRepoUrl").value.trim();const iconValue=$("appIconUrl").value.trim();
+  if(!downloadUrl){error.textContent="Le lien APK doit être une URL HTTP ou HTTPS valide.";error.hidden=false;return;}
+  if(repoValue&&!parseGitHubRepo(repoValue)){error.textContent="Le dépôt doit être du type https://github.com/proprietaire/depot.";error.hidden=false;return;}
+  const button=$("publishBtn");button.disabled=true;button.textContent="Publication…";
+  try{
+    await push(ref(db,"apps"),{name:$("appName").value.trim(),category:$("appCategory").value,downloadUrl,repoUrl:parseGitHubRepo(repoValue)?.url||"",iconUrl:safeUrl(iconValue),description:$("appDescription").value.trim(),author:state.currentUser.username,createdAt:Date.now()});
+    $("addAppForm").reset();closeModal("submitModal");showToast("Application publiée !","success");
+  }catch(err){console.error(err);error.textContent=explainFirebaseError(err);error.hidden=false;}
+  finally{button.disabled=false;button.textContent="Publier";}
+});
+startAppsListener();
+if(window.lucide)window.lucide.createIcons();
 </script>
-
 </body>
-
 </html>
+'''
+
+base = Path("/mnt/data/openstore_site")
+base.mkdir(exist_ok=True)
+(base / "index.html").write_text(html, encoding="utf-8")
+readme = """OpenStore — site principal corrigé
+
+Contenu :
+- index.html : site principal OpenStore.
+- Le panneau intégré de création/liste d'utilisateurs a été retiré. La gestion des comptes reste sur admin.html, le site d'administration séparé.
+- La connexion Firebase, le catalogue, la recherche, les catégories, la proposition d'applications et la détection des APK sur les Releases GitHub sont conservés.
+- Le bouton de suppression d'une application n'est affiché qu'aux administrateurs détectés via store_users/<emailKey>.
+
+Installation :
+1. Remplace le index.html du dépôt GitHub Pages par ce fichier.
+2. Ne supprime pas admin.html ni les autres fichiers.
+3. Vérifie les règles Realtime Database : le contrôle côté interface ne remplace pas les règles de sécurité Firebase.
+"""
+(base / "README.txt").write_text(readme, encoding="utf-8")
+zip_path = Path("/mnt/data/OpenStore_site_corrige.zip")
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+    z.write(base / "index.html", "index.html")
+    z.write(base / "README.txt", "README.txt")
+print("Fichiers créés :")
+print(f"- {base / 'index.html'} ({len(html)} caractères)")
+print(f"- {zip_path}")
